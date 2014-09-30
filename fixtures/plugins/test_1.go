@@ -15,30 +15,39 @@ import (
 
 type CliPlugin struct{}
 
+var commands = []string{"test_1_cmd1", "test_1_cmd2", "help"}
+
 func (c *CliPlugin) Run(args string, reply *bool) error {
-	if args == "push1" {
-		theFirstPush()
-	} else if args == "push2" {
-		theSecondPush()
+	if args == "test_1_cmd1" {
+		theFirstCmd()
+	} else if args == "test_1_cmd2" {
+		theSecondCmd()
+	} else if args == "help" {
+		theHelpCmd()
 	}
+	return nil
+}
+
+func (c *CliPlugin) ListCmds(args string, cmdList *[]string) error {
+	*cmdList = commands
 	return nil
 }
 
 func (c *CliPlugin) CmdExists(args string, exists *bool) error {
-	if args == "push1" || args == "push2" {
-		*exists = true
-	} else {
-		*exists = false
-	}
+	*exists = plugin.CmdExists(args, commands)
 	return nil
 }
 
-func theSecondPush() {
-	fmt.Println("HaHaHaHa you called THE SECOND PUSH")
+func theFirstCmd() {
+	fmt.Println("You called cmd1 in test_1")
 }
 
-func theFirstPush() {
-	fmt.Println("HaHaHaHa you called THE FIRST PUSH")
+func theSecondCmd() {
+	fmt.Println("You called cmd2 in test_1")
+}
+
+func theHelpCmd() {
+	fmt.Println("You called help in test_1")
 }
 
 func main() {
