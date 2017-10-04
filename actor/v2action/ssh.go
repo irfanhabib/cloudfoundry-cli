@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	"code.cloudfoundry.org/cli/util/clissh"
 	"code.cloudfoundry.org/cli/util/clissh/sshterminal"
 	"golang.org/x/crypto/ssh"
@@ -23,13 +24,8 @@ type SSHOptions struct {
 	DisablePseudoTTY         bool
 
 	// Parsed values
-	TerminalRequest       TerminalRequest
-	LocalPortForwardSpecs []LocalPortForward
-}
-
-type LocalPortForward struct {
-	ConnectAddress string
-	ListenAddress  string
+	TTYRequest            clissh.TTYRequest
+	LocalPortForwardSpecs []clissh.LocalPortForward
 }
 
 func (actor Actor) GetSSHPasscode() (string, error) {
@@ -37,20 +33,20 @@ func (actor Actor) GetSSHPasscode() (string, error) {
 }
 
 func (actor Actor) RunSecureShell(appName string, spaceGUID string, sshOptions SSHOptions, ui UI) (Warnings, error) {
-	err = sshOptions.ParseLocalPortForwarding()
+	err := sshOptions.parseLocalPortForwarding()
 	if err != nil {
 		return nil, err
 	}
 
 	switch {
 	case sshOptions.DisablePseudoTTY:
-		sshOptions.TerminalRequest = clissh.RequestTTYNo
+		sshOptions.TTYRequest = clissh.RequestTTYNo
 	case sshOptions.ForcePseudoTTY:
-		sshOptions.TerminalRequest = clissh.RequestTTYForce
+		sshOptions.TTYRequest = clissh.RequestTTYForce
 	case sshOptions.RequestPseudoTTY:
-		sshOptions.TerminalRequest = clissh.RequestTTYYes
+		sshOptions.TTYRequest = clissh.RequestTTYYes
 	default:
-		sshOptions.TerminalRequest = clissh.RequestTerminalAuto
+		sshOptions.TTYRequest = clissh.RequestTTYAuto
 	}
 
 	app, warnings, err := actor.GetApplicationByNameAndSpace(appName, spaceGUID)
@@ -58,11 +54,11 @@ func (actor Actor) RunSecureShell(appName string, spaceGUID string, sshOptions S
 		return warnings, err
 	}
 
-	if strings.ToUpper(app.State) != "STARTED" {
+	if app.State != ccv2.ApplicationStarted {
 		return warnings, fmt.Errorf("Application %q is not in the STARTED state", appName)
 	}
 	if !app.Diego {
-		return fmt.Errorf("Application %q is not running on Diego", appName)
+		return warnings, fmt.Errorf("Application %q is not running on Diego", appName)
 	}
 
 	passcode, err := actor.GetSSHPasscode()
@@ -82,14 +78,14 @@ func (actor Actor) RunSecureShell(appName string, spaceGUID string, sshOptions S
 		passcode,
 		actor.CloudControllerClient.AppSSHEndpoint(),
 		actor.CloudControllerClient.AppSSHHostKeyFingerprint(),
-		&sshOptions,
+		sshOptions.SkipHostValidation,
 	)
 	if err != nil {
 		return warnings, errors.New("Error opening SSH connection: " + err.Error())
 	}
 	defer secureShell.Close()
 
-	err = secureShell.LocalPortForward()
+	err = secureShell.LocalPortForward(sshOptions.LocalPortForwardSpecs)
 	if err != nil {
 		return warnings, errors.New("Error forwarding port: " + err.Error())
 	}
@@ -97,7 +93,7 @@ func (actor Actor) RunSecureShell(appName string, spaceGUID string, sshOptions S
 	if sshOptions.SkipRemoteExecution {
 		err = secureShell.Wait()
 	} else {
-		err = secureShell.InteractiveSession(sshOptions.Commands, sshOptions.TerminalRequest, ui.GetIn(), ui.GetOut(), ui.GetErr())
+		err = secureShell.InteractiveSession(sshOptions.Commands, sshOptions.TTYRequest, ui.GetIn(), ui.GetOut(), ui.GetErr())
 	}
 
 	if err != nil {
@@ -134,7 +130,7 @@ func (o SSHOptions) parseLocalPortForwarding() error {
 			remainder = r
 		}
 
-		forwardSpec := LocalPortForward{}
+		forwardSpec := clissh.LocalPortForward{}
 		switch len(parts) {
 		case 4:
 			if parts[0] == "*" {

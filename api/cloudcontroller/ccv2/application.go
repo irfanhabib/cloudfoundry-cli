@@ -53,6 +53,9 @@ type Application struct {
 	// DetectedStartCommand is the command used to start the application.
 	DetectedStartCommand types.FilteredString
 
+	// Diego is whether or not the application is running in a Diego container.
+	Diego bool
+
 	// DiskQuota is the disk given to each instance, in megabytes.
 	DiskQuota uint64
 
@@ -185,6 +188,7 @@ func (application *Application) UnmarshalJSON(data []byte) error {
 			Command              string            `json:"command"`
 			DetectedBuildpack    string            `json:"detected_buildpack"`
 			DetectedStartCommand string            `json:"detected_start_command"`
+			Diego                bool              `json:"diego"`
 			DiskQuota            uint64            `json:"disk_quota"`
 			DockerImage          string            `json:"docker_image"`
 			DockerCredentials    DockerCredentials `json:"docker_credentials"`
@@ -213,6 +217,7 @@ func (application *Application) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	application.Diego = ccApp.Entity.Diego
 	application.DiskQuota = ccApp.Entity.DiskQuota
 	application.DockerImage = ccApp.Entity.DockerImage
 	application.DockerCredentials = ccApp.Entity.DockerCredentials

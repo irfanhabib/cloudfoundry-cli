@@ -24,7 +24,7 @@ import (
 	"github.com/docker/docker/pkg/term"
 )
 
-type TerminalRequest int
+type TTYRequest int
 
 const (
 	md5FingerprintLength          = 47 // inclusive of space between bytes
@@ -32,19 +32,26 @@ const (
 	base64Sha256FingerprintLength = 43
 
 	DefaultKeepAliveInterval = 30 * time.Second
-
-	RequestTerminalAuto TerminalRequest = iota
-	RequestTerminalNo
-	RequestTerminalYes
-	RequestTerminalForce
 )
+
+const (
+	RequestTTYAuto TTYRequest = iota
+	RequestTTYNo
+	RequestTTYYes
+	RequestTTYForce
+)
+
+type LocalPortForward struct {
+	ConnectAddress string
+	ListenAddress  string
+}
 
 //go:generate counterfeiter . SecureShell
 
 type SecureShell interface {
 	Connect(username string, passcode string, appSSHEndpoint string, appSSHHostKeyFingerprint string, skipHostValidation bool) error
-	InteractiveSession(commands []string, terminalRequest TerminalRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
-	LocalPortForward() error
+	InteractiveSession(commands []string, terminalRequest TTYRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
+	LocalPortForward([]LocalPortForward) error
 	Wait() error
 	Close() error
 }
@@ -197,7 +204,7 @@ func copyAndDone(wg *sync.WaitGroup, dest io.Writer, src io.Reader) {
 	wg.Done()
 }
 
-func (c *secureShell) InteractiveSession(commands []string, terminalRequest TerminalRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (c *secureShell) InteractiveSession(commands []string, terminalRequest TTYRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	secureClient := c.secureClient
 	session, err := secureClient.NewSession()
 	if err != nil {
@@ -348,7 +355,7 @@ func fingerprintCallback(skipHostValidation bool, expectedFingerprint string) ss
 	}
 }
 
-func (c *secureShell) shouldAllocateTerminal(commands []string, terminalRequest TerminalRequest, stdinIsTerminal bool) bool {
+func (c *secureShell) shouldAllocateTerminal(commands []string, terminalRequest TTYRequest, stdinIsTerminal bool) bool {
 	switch terminalRequest {
 	case RequestTTYForce:
 		return true
