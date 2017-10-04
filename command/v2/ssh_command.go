@@ -75,8 +75,8 @@ func (cmd SSHCommand) Execute([]string) error {
 		ForcePseudoTTY:           cmd.ForcePseudoTTY,
 		DisablePseudoTTY:         cmd.DisablePseudoTTY,
 	}
-	warnings, err := cmd.Actor.RunSecureShell(cmd.RequiredArgs.AppName, cmd.Config.TargetedOrganization().GUID, sshOptions, cmd.UI)
+	warnings, err := cmd.Actor.RunSecureShell(cmd.RequiredArgs.AppName, cmd.Config.TargetedSpace().GUID, sshOptions, cmd.UI)
 	cmd.UI.DisplayWarnings(warnings)
 
-	return err
+	return shared.HandleError(err)
 }
