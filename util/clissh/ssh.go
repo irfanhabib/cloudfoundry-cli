@@ -46,16 +46,6 @@ type LocalPortForward struct {
 	ListenAddress  string
 }
 
-//go:generate counterfeiter . SecureShell
-
-type SecureShell interface {
-	Connect(username string, passcode string, appSSHEndpoint string, appSSHHostKeyFingerprint string, skipHostValidation bool) error
-	InteractiveSession(commands []string, terminalRequest TTYRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
-	LocalPortForward([]LocalPortForward) error
-	Wait() error
-	Close() error
-}
-
 //go:generate counterfeiter . SecureDialer
 
 type SecureDialer interface {
@@ -92,7 +82,7 @@ type SecureSession interface {
 	Close() error
 }
 
-type secureShell struct {
+type SecureShell struct {
 	secureDialer      SecureDialer
 	terminalHelper    sshterminal.TerminalHelper
 	listenerFactory   ListenerFactory
@@ -107,8 +97,8 @@ func NewSecureShell(
 	terminalHelper sshterminal.TerminalHelper,
 	listenerFactory ListenerFactory,
 	keepAliveInterval time.Duration,
-) SecureShell {
-	return &secureShell{
+) *SecureShell {
+	return &SecureShell{
 		secureDialer:      secureDialer,
 		terminalHelper:    terminalHelper,
 		listenerFactory:   listenerFactory,
@@ -117,7 +107,7 @@ func NewSecureShell(
 	}
 }
 
-func (c *secureShell) Connect(username string, passcode string, appSSHEndpoint string, appSSHHostKeyFingerprint string, skipHostValidation bool) error {
+func (c *SecureShell) Connect(username string, passcode string, appSSHEndpoint string, appSSHHostKeyFingerprint string, skipHostValidation bool) error {
 	clientConfig := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -135,14 +125,14 @@ func (c *secureShell) Connect(username string, passcode string, appSSHEndpoint s
 	return nil
 }
 
-func (c *secureShell) Close() error {
+func (c *SecureShell) Close() error {
 	for _, listener := range c.localListeners {
 		_ = listener.Close()
 	}
 	return c.secureClient.Close()
 }
 
-func (c *secureShell) LocalPortForward(localPortForwardSpecs []LocalPortForward) error {
+func (c *SecureShell) LocalPortForward(localPortForwardSpecs []LocalPortForward) error {
 	for _, spec := range localPortForwardSpecs {
 		listener, err := c.listenerFactory.Listen("tcp", spec.ListenAddress)
 		if err != nil {
@@ -156,7 +146,7 @@ func (c *secureShell) LocalPortForward(localPortForwardSpecs []LocalPortForward)
 	return nil
 }
 
-func (c *secureShell) localForwardAcceptLoop(listener net.Listener, addr string) {
+func (c *SecureShell) localForwardAcceptLoop(listener net.Listener, addr string) {
 	defer listener.Close()
 
 	for {
@@ -173,7 +163,7 @@ func (c *secureShell) localForwardAcceptLoop(listener net.Listener, addr string)
 	}
 }
 
-func (c *secureShell) handleForwardConnection(conn net.Conn, targetAddr string) {
+func (c *SecureShell) handleForwardConnection(conn net.Conn, targetAddr string) {
 	defer conn.Close()
 
 	target, err := c.secureClient.Dial("tcp", targetAddr)
@@ -204,7 +194,7 @@ func copyAndDone(wg *sync.WaitGroup, dest io.Writer, src io.Reader) {
 	wg.Done()
 }
 
-func (c *secureShell) InteractiveSession(commands []string, terminalRequest TTYRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (c *SecureShell) InteractiveSession(commands []string, terminalRequest TTYRequest, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	secureClient := c.secureClient
 	session, err := secureClient.NewSession()
 	if err != nil {
@@ -302,7 +292,7 @@ func (c *secureShell) InteractiveSession(commands []string, terminalRequest TTYR
 	return result
 }
 
-func (c *secureShell) Wait() error {
+func (c *SecureShell) Wait() error {
 	keepaliveStopCh := make(chan struct{})
 	defer close(keepaliveStopCh)
 
@@ -355,7 +345,7 @@ func fingerprintCallback(skipHostValidation bool, expectedFingerprint string) ss
 	}
 }
 
-func (c *secureShell) shouldAllocateTerminal(commands []string, terminalRequest TTYRequest, stdinIsTerminal bool) bool {
+func (c *SecureShell) shouldAllocateTerminal(commands []string, terminalRequest TTYRequest, stdinIsTerminal bool) bool {
 	switch terminalRequest {
 	case RequestTTYForce:
 		return true
@@ -370,7 +360,7 @@ func (c *secureShell) shouldAllocateTerminal(commands []string, terminalRequest 
 	}
 }
 
-func (c *secureShell) resize(resized <-chan os.Signal, session SecureSession, terminalFd uintptr) {
+func (c *SecureShell) resize(resized <-chan os.Signal, session SecureSession, terminalFd uintptr) {
 	type resizeMessage struct {
 		Width       uint32
 		Height      uint32
@@ -411,7 +401,7 @@ func keepalive(conn ssh.Conn, ticker *time.Ticker, stopCh chan struct{}) {
 	}
 }
 
-func (c *secureShell) terminalType() string {
+func (c *SecureShell) terminalType() string {
 	term := os.Getenv("TERM")
 	if term == "" {
 		term = "xterm"
@@ -419,7 +409,7 @@ func (c *secureShell) terminalType() string {
 	return term
 }
 
-func (c *secureShell) getWindowDimensions(terminalFd uintptr) (width int, height int) {
+func (c *SecureShell) getWindowDimensions(terminalFd uintptr) (width int, height int) {
 	winSize, err := c.terminalHelper.GetWinsize(terminalFd)
 	if err != nil {
 		winSize = &term.Winsize{

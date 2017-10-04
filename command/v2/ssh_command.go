@@ -16,7 +16,7 @@ type SSHCommand struct {
 	RequiredArgs             flag.AppName `positional-args:"yes"`
 	ApplicationInstanceIndex uint         `long:"app-instance-index" short:"i" description:"Application instance index (Default: 0)"`
 	Commands                 []string     `long:"command" short:"c" description:"Command to run. This flag can be defined more than once."`
-	LocalPortForwarding      []string     `short:"L" description:"Local port forward specification. This flag can be defined more than once."`
+	LocalPortForwardSpecs    []string     `short:"L" description:"Local port forward specification. This flag can be defined more than once."`
 	SkipHostValidation       bool         `long:"skip-host-validation" short:"k" description:"Skip host key validation"`
 	SkipRemoteExecution      bool         `long:"skip-remote-execution" short:"N" description:"Do not execute a remote command"`
 	RequestPseudoTTY         bool         `long:"request-pseudo-tty" short:"t" description:"Request pseudo-tty allocation"`
@@ -68,7 +68,7 @@ func (cmd SSHCommand) Execute([]string) error {
 	sshOptions := v2action.SSHOptions{
 		ApplicationInstanceIndex: cmd.ApplicationInstanceIndex,
 		Commands:                 cmd.Commands,
-		LocalPortForwarding:      cmd.LocalPortForwarding,
+		LocalPortForwardSpecs:    cmd.LocalPortForwardSpecs,
 		SkipHostValidation:       cmd.SkipHostValidation,
 		SkipRemoteExecution:      cmd.SkipRemoteExecution,
 		RequestPseudoTTY:         cmd.RequestPseudoTTY,
@@ -77,6 +77,5 @@ func (cmd SSHCommand) Execute([]string) error {
 	}
 	warnings, err := cmd.Actor.RunSecureShell(cmd.RequiredArgs.AppName, cmd.Config.TargetedSpace().GUID, sshOptions, cmd.UI)
 	cmd.UI.DisplayWarnings(warnings)
-
 	return shared.HandleError(err)
 }
