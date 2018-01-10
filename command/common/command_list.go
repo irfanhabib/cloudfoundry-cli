@@ -9,13 +9,23 @@ import (
 )
 
 var Commands commandList
+var V2Commands v2CommandList
+
+type v2CommandList struct {
+	VerboseOrVersion bool `short:"v" long:"version" description:"verbose and version flag"`
+
+	App   v2.AppCommand   `command:"app" description:"Display health and status for an app"`
+	Scale v2.ScaleCommand `command:"scale" description:"Change or view the instance count, disk space limit, and memory limit for an app"`
+}
 
 type commandList struct {
 	VerboseOrVersion bool `short:"v" long:"version" description:"verbose and version flag"`
 
 	V2Push v2.V2PushCommand `command:"v2-push" description:"Push a new app or sync changes to an existing app"`
 
-	V3App                v3.V3AppCommand                `command:"v3-app" description:"Display health and status for an app"`
+	V3App   v3.V3AppCommand   `command:"app" description:"Display health and status for an app"`
+	V3Scale v3.V3ScaleCommand `command:"scale" description:"Change or view the instance count, disk space limit, and memory limit for an app"`
+
 	V3Apps               v3.V3AppsCommand               `command:"v3-apps" description:"List all apps in the target space"`
 	V3CreateApp          v3.V3CreateAppCommand          `command:"v3-create-app" description:"Create a V3 App"`
 	V3CreatePackage      v3.V3CreatePackageCommand      `command:"v3-create-package" description:"Uploads a V3 Package"`
@@ -27,7 +37,6 @@ type commandList struct {
 	V3Push               v3.V3PushCommand               `command:"v3-push" description:"Push a new app or sync changes to an existing app"`
 	V3Restart            v3.V3RestartCommand            `command:"v3-restart" description:"Stop all instances of the app, then start them again. This causes downtime."`
 	V3RestartAppInstance v3.V3RestartAppInstanceCommand `command:"v3-restart-app-instance" description:"Terminate, then instantiate an app instance"`
-	V3Scale              v3.V3ScaleCommand              `command:"v3-scale" description:"Change or view the instance count, disk space limit, and memory limit for an app"`
 	V3SetDroplet         v3.V3SetDropletCommand         `command:"v3-set-droplet" description:"Set the droplet used to run an app"`
 	V3SetEnv             v3.V3SetEnvCommand             `command:"v3-set-env" description:"Set an env variable for an app"`
 	V3SetHealthCheck     v3.V3SetHealthCheckCommand     `command:"v3-set-health-check" description:"Change type of health check performed on an app's process"`
@@ -44,7 +53,6 @@ type commandList struct {
 	AllowSpaceSSH                      v2.AllowSpaceSSHCommand                      `command:"allow-space-ssh" description:"Allow SSH access for the space"`
 	Api                                v2.ApiCommand                                `command:"api" description:"Set or view target api url"`
 	Apps                               v2.AppsCommand                               `command:"apps" alias:"a" description:"List all apps in the target space"`
-	App                                v2.AppCommand                                `command:"app" description:"Display health and status for an app"`
 	Auth                               v2.AuthCommand                               `command:"auth" description:"Authenticate user non-interactively"`
 	BindRouteService                   v2.BindRouteServiceCommand                   `command:"bind-route-service" alias:"brs" description:"Bind a service instance to an HTTP route"`
 	BindRunningSecurityGroup           v2.BindRunningSecurityGroupCommand           `command:"bind-running-security-group" description:"Bind a security group to the list of security groups to be used for running applications"`
@@ -147,7 +155,6 @@ type commandList struct {
 	RunningEnvironmentVariableGroup    v2.RunningEnvironmentVariableGroupCommand    `command:"running-environment-variable-group" alias:"revg" description:"Retrieve the contents of the running environment variable group"`
 	RunningSecurityGroups              v2.RunningSecurityGroupsCommand              `command:"running-security-groups" description:"List security groups in the set of security groups for running applications"`
 	RunTask                            v3.RunTaskCommand                            `command:"run-task" alias:"rt" description:"Run a one-off task on an app"`
-	Scale                              v2.ScaleCommand                              `command:"scale" description:"Change or view the instance count, disk space limit, and memory limit for an app"`
 	SecurityGroups                     v2.SecurityGroupsCommand                     `command:"security-groups" description:"List all security groups"`
 	SecurityGroup                      v2.SecurityGroupCommand                      `command:"security-group" description:"Show a single security group"`
 	ServiceAccess                      v2.ServiceAccessCommand                      `command:"service-access" description:"List service access settings"`

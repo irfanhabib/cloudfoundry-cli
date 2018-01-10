@@ -1,6 +1,9 @@
 package shared
 
 import (
+	"net/http"
+
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	ccWrapper "code.cloudfoundry.org/cli/api/cloudcontroller/wrapper"
 	"code.cloudfoundry.org/cli/api/uaa"
@@ -11,7 +14,7 @@ import (
 
 // NewClients creates a new V3 Cloud Controller client and UAA client using the
 // passed in config.
-func NewClients(config command.Config, ui command.UI, targetCF bool) (*ccv3.Client, *uaa.Client, error) {
+func NewClients(config command.Config, ui command.UI, targetCF bool, v2Switch bool) (*ccv3.Client, *uaa.Client, error) {
 	ccWrappers := []ccv3.ConnectionWrapper{}
 
 	verbose, location := config.Verbose()
@@ -51,6 +54,9 @@ func NewClients(config command.Config, ui command.UI, targetCF bool) (*ccv3.Clie
 		DialTimeout:       config.DialTimeout(),
 	})
 	if err != nil {
+		if v3Err, ok := err.(ccerror.V3UnexpectedResponseError); ok && v3Err.ResponseCode == http.StatusNotFound && v2Switch {
+			return nil, nil, command.V3V2SwitchError{}
+		}
 		return nil, nil, err
 	}
 
