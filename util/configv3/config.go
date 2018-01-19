@@ -131,6 +131,7 @@ func LoadConfig(flags ...FlagOverride) (*Config, error) {
 		BinaryName:       filepath.Base(os.Args[0]),
 		CFColor:          os.Getenv("CF_COLOR"),
 		CFDialTimeout:    os.Getenv("CF_DIAL_TIMEOUT"),
+		CFForceV2:        os.Getenv("CF_FORCE_V2"),
 		CFLogLevel:       os.Getenv("CF_LOG_LEVEL"),
 		CFPluginHome:     os.Getenv("CF_PLUGIN_HOME"),
 		CFStagingTimeout: os.Getenv("CF_STAGING_TIMEOUT"),
@@ -340,6 +341,7 @@ type EnvOverride struct {
 	BinaryName       string
 	CFColor          string
 	CFDialTimeout    string
+	CFForceV2        string
 	CFHome           string
 	CFLogLevel       string
 	CFPluginHome     string
@@ -590,6 +592,18 @@ func (config *Config) LogLevel() int {
 // it will **not** return the new width.
 func (config *Config) TerminalWidth() int {
 	return config.detectedSettings.terminalWidth
+}
+
+// ForceV2 will return true if CF_FORCE_V2 is set to true/1/etc.
+func (config *Config) ForceV2() bool {
+	if config.ENV.CFForceV2 != "" {
+		envVal, err := strconv.ParseBool(config.ENV.CFForceV2)
+		if err == nil {
+			return envVal
+		}
+	}
+
+	return false
 }
 
 // DialTimeout returns the timeout to use when dialing. This is based off of:

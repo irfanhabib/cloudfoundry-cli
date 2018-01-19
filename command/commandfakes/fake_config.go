@@ -104,6 +104,15 @@ type FakeConfig struct {
 	experimentalReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	ForceV2Stub        func() bool
+	forceV2Mutex       sync.RWMutex
+	forceV2ArgsForCall []struct{}
+	forceV2Returns     struct {
+		result1 bool
+	}
+	forceV2ReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	GetPluginStub        func(pluginName string) (configv3.Plugin, bool)
 	getPluginMutex       sync.RWMutex
 	getPluginArgsForCall []struct {
@@ -808,6 +817,46 @@ func (fake *FakeConfig) ExperimentalReturnsOnCall(i int, result1 bool) {
 		})
 	}
 	fake.experimentalReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeConfig) ForceV2() bool {
+	fake.forceV2Mutex.Lock()
+	ret, specificReturn := fake.forceV2ReturnsOnCall[len(fake.forceV2ArgsForCall)]
+	fake.forceV2ArgsForCall = append(fake.forceV2ArgsForCall, struct{}{})
+	fake.recordInvocation("ForceV2", []interface{}{})
+	fake.forceV2Mutex.Unlock()
+	if fake.ForceV2Stub != nil {
+		return fake.ForceV2Stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.forceV2Returns.result1
+}
+
+func (fake *FakeConfig) ForceV2CallCount() int {
+	fake.forceV2Mutex.RLock()
+	defer fake.forceV2Mutex.RUnlock()
+	return len(fake.forceV2ArgsForCall)
+}
+
+func (fake *FakeConfig) ForceV2Returns(result1 bool) {
+	fake.ForceV2Stub = nil
+	fake.forceV2Returns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeConfig) ForceV2ReturnsOnCall(i int, result1 bool) {
+	fake.ForceV2Stub = nil
+	if fake.forceV2ReturnsOnCall == nil {
+		fake.forceV2ReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.forceV2ReturnsOnCall[i] = struct {
 		result1 bool
 	}{result1}
 }
@@ -2097,6 +2146,8 @@ func (fake *FakeConfig) Invocations() map[string][][]interface{} {
 	defer fake.dockerPasswordMutex.RUnlock()
 	fake.experimentalMutex.RLock()
 	defer fake.experimentalMutex.RUnlock()
+	fake.forceV2Mutex.RLock()
+	defer fake.forceV2Mutex.RUnlock()
 	fake.getPluginMutex.RLock()
 	defer fake.getPluginMutex.RUnlock()
 	fake.getPluginCaseInsensitiveMutex.RLock()

@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
@@ -15,6 +16,11 @@ import (
 // NewClients creates a new V3 Cloud Controller client and UAA client using the
 // passed in config.
 func NewClients(config command.Config, ui command.UI, targetCF bool, v2Switch bool) (*ccv3.Client, *uaa.Client, error) {
+	if v2Switch && config.ForceV2() {
+		fmt.Println("switching to v2")
+		return nil, nil, command.V3V2SwitchError{}
+	}
+
 	ccWrappers := []ccv3.ConnectionWrapper{}
 
 	verbose, location := config.Verbose()
