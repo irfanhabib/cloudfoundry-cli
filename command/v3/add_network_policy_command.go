@@ -39,7 +39,7 @@ func (cmd *AddNetworkPolicyCommand) Setup(config command.Config, ui command.UI) 
 	cmd.Config = config
 	cmd.SharedActor = sharedaction.NewActor(config)
 
-	client, uaa, err := shared.NewClients(config, ui, true, false)
+	client, uaa, err := shared.NewClients(config, ui, true, false, "")
 	if err != nil {
 		if v3Err, ok := err.(ccerror.V3UnexpectedResponseError); ok && v3Err.ResponseCode == http.StatusNotFound {
 			return translatableerror.CFNetworkingEndpointNotFoundError{}

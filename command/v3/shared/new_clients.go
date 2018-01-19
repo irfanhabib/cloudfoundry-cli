@@ -15,7 +15,7 @@ import (
 
 // NewClients creates a new V3 Cloud Controller client and UAA client using the
 // passed in config.
-func NewClients(config command.Config, ui command.UI, targetCF bool, v2Switch bool) (*ccv3.Client, *uaa.Client, error) {
+func NewClients(config command.Config, ui command.UI, targetCF bool, v2Switch bool, minVersionV3 string) (*ccv3.Client, *uaa.Client, error) {
 	if v2Switch && config.ForceV2() {
 		fmt.Println("switching to v2")
 		return nil, nil, command.V3V2SwitchError{}
@@ -64,6 +64,16 @@ func NewClients(config command.Config, ui command.UI, targetCF bool, v2Switch bo
 			return nil, nil, command.V3V2SwitchError{}
 		}
 		return nil, nil, err
+	}
+
+	if minVersionV3 != "" {
+		err = command.MinimumAPIVersionCheck(ccClient.CloudControllerAPIVersion(), minVersionV3)
+		if err != nil {
+			if _, ok := err.(translatableerror.MinimumAPIVersionNotMetError); ok {
+				return nil, nil, command.V3V2SwitchError{}
+			}
+			return nil, nil, err
+		}
 	}
 
 	if ccClient.UAA() == "" {

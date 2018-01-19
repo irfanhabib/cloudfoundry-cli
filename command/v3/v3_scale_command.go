@@ -49,7 +49,7 @@ func (cmd *V3ScaleCommand) Setup(config command.Config, ui command.UI) error {
 	cmd.Config = config
 	cmd.SharedActor = sharedaction.NewActor(config)
 
-	ccClient, _, err := shared.NewClients(config, ui, true, true)
+	ccClient, _, err := shared.NewClients(config, ui, true, true, ccversion.MinVersionV3)
 	if err != nil {
 		return err
 	}
@@ -76,12 +76,7 @@ func (cmd V3ScaleCommand) Execute(args []string) error {
 	cmd.UI.DisplayText(command.ExperimentalWarning)
 	cmd.UI.DisplayNewline()
 
-	err := command.MinimumAPIVersionCheck(cmd.Actor.CloudControllerAPIVersion(), ccversion.MinVersionV3)
-	if err != nil {
-		return err
-	}
-
-	err = cmd.SharedActor.CheckTarget(true, true)
+	err := cmd.SharedActor.CheckTarget(true, true)
 	if err != nil {
 		return err
 	}
